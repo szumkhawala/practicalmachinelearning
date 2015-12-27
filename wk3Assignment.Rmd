@@ -1,0 +1,101 @@
+---
+title: "Machine Learning wk 3 Assignment"
+author: "Svapneel Zumkhawala"
+date: "Sunday, 27/12/2015"
+output: html_document
+---
+
+##Title - Machine Learning - Wk3 Assignment 
+
+
+###Executive Summary
+
+The goal of the assignment is to predict the manner in which they did the exercise based on data captured by the accelorameters. 
+
+This will involve the following:
+
+ - perprocessing to make the data ready for modeling
+ - taking the training data set and splitting into training and test datasets for cross validation for the model used.
+ - performing modeling
+ - predict on new data
+
+
+The follloing actions were taken -
+
+- columns where most values were NAs were removed. This reduced the columns from 160 to 54
+- data was split into training and test sets based on 35% and 65% ratios respectively. Cross validation showed 99 % accuracy
+- A randon forest model was applied
+- The model was applied to a new dataset.
+
+
+
+### Prepare Data
+
+
+```{r}
+##get required libraries
+
+library(ggplot2)
+library(caret)
+
+#set URL parameters
+
+
+training_source_URL<-"https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
+test_source_URL<-"https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
+
+#download data
+setInternet2(use = TRUE)
+
+trnSet<-read.csv(training_source_URL,na.strings=c("NA",""))
+prdSet<-read.csv(test_source_URL,na.strings=c("NA",""))
+
+#remove unneccessary header data
+
+trnSet<-trnSet[,7:160]
+prdSet<-prdSet[,7:160]
+
+#remove where mostly NA values
+
+nonNAcolumns<-apply(!is.na(trnSet),2,sum)>19621
+trnSet<-trnSet[,nonNAcolumns]
+prdSet<-prdSet[,nonNAcolumns]
+
+#create test and train datasets
+
+trnPartitioning<-createDataPartition(y=trnSet$classe,p=0.35,list=FALSE)
+trnPartion<-trnSet[trnPartitioning,]
+tstPartition<-trnSet[-trnPartitioning,]
+
+
+#generate Random Forest Model
+
+rf_mdl<-train(classe~.,data=trnPartion,method="rf",
+                trControl=trainControl(method="cv",number=5),
+                prox=TRUE,allowParallel=TRUE)
+
+#crossvalidate against test
+
+pred <- predict(rf_mdl, tstPartition)
+
+tstPartition$predRight <- pred == tstPartition$classe
+
+table(pred, tstPartition$classe)
+
+ pRes <- postResample(pred, tstPartition$classe)
+
+#Accuracy of cross vaidate
+
+pRes
+
+
+#prediction of the test cases
+predict(rf_mdl, prdSet)
+
+
+
+
+
+
+
+```
